@@ -3,42 +3,7 @@ import sys
 
 TOKENS_FILE = "tokens.txt"
 
-# =============================================================================
-# GRAMMAR — Context-Free Grammar (CFG) production rules
-#
-# The parser below implements exactly this grammar:
-#
-#   program      → function*
-#
-#   function     → Keyword Identifier "(" ")" block
-#
-#   block        → "{" statement* "}"
-#
-#   statement    → "if" "(" expression ")" statement ( "else" statement )?
-#               |  "return" expression ";"
-#               |  block
-#               |  declaration
-#               |  expression ";"
-#
-#   declaration  → Keyword ( Identifier ( "=" expression )? ),+ ";"
-#
-#   expression   → assignment
-#
-#   assignment   → equality ( "=" assignment )?
-#
-#   equality     → add ( ("==" | "!=") add )*
-#
-#   add          → mul ( ("+" | "-") mul )*
-#
-#   mul          → primary ( ("*" | "/") primary )*
-#
-#   primary      → "(" expression ")"
-#               |  Identifier
-#               |  Constant
-#
-# The dictionary below maps each non-terminal name to its rule string(s)
-# for reference and documentation purposes.
-# =============================================================================
+
 
 GRAMMAR = {
     "program":     ["function*"],
@@ -80,9 +45,6 @@ def print_grammar():
     print()
 
 
-# =============================================================================
-# TOKEN STREAM
-# =============================================================================
 
 t = []
 pos = 0
@@ -118,10 +80,6 @@ def expect(ttype, value=None):
     return consume()
 
 
-# =============================================================================
-# PARSER — implements the grammar rules above
-# Each function corresponds directly to one non-terminal in the grammar.
-# =============================================================================
 
 def parse_program():
     # program → function*
@@ -132,7 +90,6 @@ def parse_program():
 
 
 def parse_function():
-    # function → Keyword Identifier "(" ")" block
     typ = expect("Keyword")[1]
     name = expect("Identifier")[1]
     expect("Special Character", "(")
@@ -142,7 +99,7 @@ def parse_function():
 
 
 def parse_block():
-    # block → "{" statement* "}"
+    
     expect("Special Character", "{")
     stmts = []
     while not (peek()[0] == "Special Character" and peek()[1] == "}"):
@@ -152,7 +109,7 @@ def parse_block():
 
 
 def parse_statement():
-    # statement → "if" "(" expression ")" statement ( "else" statement )?
+    
     if match("Keyword", "if"):
         expect("Special Character", "(")
         cond = parse_expression()
@@ -163,28 +120,24 @@ def parse_statement():
             els = parse_statement()
         return ("if", cond, then, els)
 
-    # statement → "return" expression ";"
+   
     if match("Keyword", "return"):
         expr = parse_expression()
         expect("Special Character", ";")
         return ("return", expr)
 
-    # statement → block
     if peek()[0] == "Special Character" and peek()[1] == "{":
         return parse_block()
 
-    # statement → declaration
     if peek()[0] == "Keyword":
         return parse_declaration()
 
-    # statement → expression ";"
     expr = parse_expression()
     expect("Special Character", ";")
     return ("expr", expr)
 
 
 def parse_declaration():
-    # declaration → Keyword ( Identifier ( "=" expression )? ),+ ";"
     typ = consume()[1]
     vars = []
     while True:
@@ -205,7 +158,6 @@ def parse_expression():
 
 
 def parse_assignment():
-    # assignment → equality ( "=" assignment )?
     left = parse_equality()
     if match("Operator", "="):
         right = parse_assignment()
@@ -214,7 +166,6 @@ def parse_assignment():
 
 
 def parse_equality():
-    # equality → add ( ("==" | "!=") add )*
     node = parse_add()
     while True:
         if match("Operator", "=="):
@@ -228,7 +179,6 @@ def parse_equality():
 
 
 def parse_add():
-    # add → mul ( ("+" | "-") mul )*
     node = parse_mul()
     while True:
         if match("Operator", "+"):
@@ -242,7 +192,6 @@ def parse_add():
 
 
 def parse_mul():
-    # mul → primary ( ("*" | "/") primary )*
     node = parse_primary()
     while True:
         if match("Operator", "*"):
@@ -256,7 +205,6 @@ def parse_mul():
 
 
 def parse_primary():
-    # primary → "(" expression ")"  |  Identifier  |  Constant
     if match("Special Character", "("):
         node = parse_expression()
         expect("Special Character", ")")
@@ -268,9 +216,7 @@ def parse_primary():
     raise SyntaxError("bad expr " + str(peek()))
 
 
-# =============================================================================
-# PARSE TREE PRINTER
-# =============================================================================
+
 
 def print_tree(node, prefix="", is_last=True, is_root=True):
     connector = "" if is_root else ("└─ " if is_last else "├─ ")
@@ -289,9 +235,7 @@ def print_tree(node, prefix="", is_last=True, is_root=True):
         print(f"{prefix}{connector}{node}")
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
+
 
 def main():
     global t, pos
@@ -313,7 +257,6 @@ def main():
 
     pos = 0
 
-    # Step 2: Parse and print the tree
     try:
         ast_tree = parse_program()
     except SyntaxError as exc:
